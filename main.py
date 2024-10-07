@@ -39,10 +39,21 @@ async def singlefile_download(url: str, cookies_file: Optional[str] = None) -> s
         filename,
     ]
 
-    process = await asyncio.create_subprocess_exec(*cmds)
-    await process.communicate()
+    try:
+        process = await asyncio.create_subprocess_exec(
+            *cmds, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+        )
+        stdout, stderr = await process.communicate()
 
-    return filename
+        if process.returncode != 0:
+            logger.error("SingleFile failed with error: {}", stderr.decode())
+            return ""
+
+        logger.info("SingleFile output: {}", stdout.decode())
+        return filename
+    except Exception as e:
+        logger.error("Failed to execute SingleFile: {}", e)
+        return ""
 
 
 async def load_singlefile_html(url: str) -> str:
