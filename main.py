@@ -1,8 +1,9 @@
 import os
 import tempfile
 import asyncio
+import json
 from pathlib import Path
-from flask import Flask, request, jsonify
+from flask import Flask, request, Response
 from bs4 import BeautifulSoup
 from loguru import logger
 from typing import Optional
@@ -76,15 +77,22 @@ async def download_html():
     url = data.get("url")
 
     if not url:
-        return jsonify(error="URL is required"), 400
+        return Response(
+            json.dumps({"error": "URL is required"}, ensure_ascii=False),
+            mimetype="application/json",
+        ), 400
 
     try:
         content = await load_singlefile_html(url)
-        # 使用關鍵字參數來構建 JSON 響應
-        return jsonify(content=content), 200
+        # 手動構建 JSON 響應，確保不轉義 Unicode 字符
+        response_data = json.dumps({"content": content}, ensure_ascii=False)
+        return Response(response_data, mimetype="application/json"), 200
     except Exception as e:
         logger.error("Failed to download HTML: {}", e)
-        return jsonify(error="Failed to download HTML"), 500
+        error_data = json.dumps(
+            {"error": "Failed to download HTML"}, ensure_ascii=False
+        )
+        return Response(error_data, mimetype="application/json"), 500
 
 
 # Health check endpoint
