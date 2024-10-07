@@ -21,7 +21,18 @@ async def singlefile_download(url: str, cookies_file: Optional[str] = None) -> s
     filename = tempfile.mktemp(suffix=".html")
     singlefile_path = get_singlefile_path_from_env()
 
-    cmds = [singlefile_path]
+    # 指定 Chromium 的可執行路徑
+    chromium_path = "/usr/bin/chromium"
+
+    cmds = [
+        singlefile_path,
+        "--browser-executable-path",
+        chromium_path,
+        "--filename-conflict-action",
+        "overwrite",
+        url,
+        filename,
+    ]
 
     if cookies_file is not None:
         if not Path(cookies_file).exists():
@@ -31,13 +42,6 @@ async def singlefile_download(url: str, cookies_file: Optional[str] = None) -> s
             "--browser-cookies-file",
             cookies_file,
         ]
-
-    cmds += [
-        "--filename-conflict-action",
-        "overwrite",
-        url,
-        filename,
-    ]
 
     try:
         process = await asyncio.create_subprocess_exec(
