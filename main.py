@@ -76,15 +76,15 @@ async def download_html():
     url = data.get("url")
 
     if not url:
-        return jsonify({"error": "URL is required"}), 400
+        return jsonify(error="URL is required"), 400
 
     try:
         content = await load_singlefile_html(url)
-        # 使用 ensure_ascii=False 來避免 Unicode 字符被轉義
-        return jsonify({"content": content}, ensure_ascii=False)
+        # 使用關鍵字參數來構建 JSON 響應
+        return jsonify(content=content), 200
     except Exception as e:
         logger.error("Failed to download HTML: {}", e)
-        return jsonify({"error": "Failed to download HTML"}), 500
+        return jsonify(error="Failed to download HTML"), 500
 
 
 # Health check endpoint
