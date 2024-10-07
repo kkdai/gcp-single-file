@@ -10,8 +10,8 @@ app = Flask(__name__)
 
 
 def get_singlefile_path_from_env() -> str:
-    # 修改默認路徑為 /single-file
-    return os.getenv("SINGLEFILE_PATH", "/single-file")
+    # 直接返回 'single-file'，因為它應該在 PATH 中
+    return "single-file"
 
 
 async def singlefile_download(url: str, cookies_file: str | None = None) -> str:
