@@ -6,8 +6,11 @@ RUN apt-get update && apt-get install -y nodejs npm && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
+
 # 安裝 single-file-cli
-RUN npm install -g single-file-cli
+RUN git clone --depth 1 --recursive https://github.com/gildas-lormeau/single-file-cli.git
+RUN cd single-file-cli
+RUN chmod +x single-file
 
 WORKDIR /app
 
