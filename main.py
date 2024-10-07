@@ -80,7 +80,8 @@ async def download_html():
 
     try:
         content = await load_singlefile_html(url)
-        return jsonify({"content": content})
+        # 使用 ensure_ascii=False 來避免 Unicode 字符被轉義
+        return jsonify({"content": content}, ensure_ascii=False)
     except Exception as e:
         logger.error("Failed to download HTML: {}", e)
         return jsonify({"error": "Failed to download HTML"}), 500
