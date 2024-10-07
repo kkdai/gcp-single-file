@@ -1,49 +1,80 @@
-# main.py
 import os
 import tempfile
-import subprocess
+import asyncio
 from pathlib import Path
 from flask import Flask, request, jsonify
+from bs4 import BeautifulSoup
+from loguru import logger
 
 app = Flask(__name__)
 
 
-# add "/" for health check
-@app.get("/")
-def health_check():
-    print("Health Check! Ok!")
-    return "OK"
+def get_singlefile_path_from_env() -> str:
+    # 修改默認路徑為 /single-file
+    return os.getenv("SINGLEFILE_PATH", "/single-file")
+
+
+async def singlefile_download(url: str, cookies_file: str | None = None) -> str:
+    logger.info("Downloading HTML by SingleFile: {}", url)
+
+    filename = tempfile.mktemp(suffix=".html")
+    singlefile_path = get_singlefile_path_from_env()
+
+    cmds = [singlefile_path]
+
+    if cookies_file is not None:
+        if not Path(cookies_file).exists():
+            raise FileNotFoundError("cookies file not found")
+
+        cmds += [
+            "--browser-cookies-file",
+            cookies_file,
+        ]
+
+    cmds += [
+        "--filename-conflict-action",
+        "overwrite",
+        url,
+        filename,
+    ]
+
+    process = await asyncio.create_subprocess_exec(*cmds)
+    await process.communicate()
+
+    return filename
+
+
+async def load_singlefile_html(url: str) -> str:
+    f = await singlefile_download(url)
+
+    with open(f, "rb") as fp:
+        soup = BeautifulSoup(fp, "html.parser")
+        text = soup.get_text(strip=True)
+    os.remove(f)  # 清理临时文件
+    return text
 
 
 @app.route("/download", methods=["POST"])
-def download_html():
+async def download_html():
     data = request.json
     url = data.get("url")
 
     if not url:
         return jsonify({"error": "URL is required"}), 400
 
-    result = download_html_by_singlefile(url)
-
-    if result:
-        with open(result, "r", encoding="utf-8") as f:
-            content = f.read()
-        os.remove(result)  # 清理临时文件
+    try:
+        content = await load_singlefile_html(url)
         return jsonify({"content": content})
-    else:
+    except Exception as e:
+        logger.error("Failed to download HTML: {}", e)
         return jsonify({"error": "Failed to download HTML"}), 500
 
 
-def download_html_by_singlefile(url: str) -> str:
-    filename = tempfile.mktemp(suffix=".html")
-    print(f"download {url} to {filename}")
-    cmds = ["single-file", url, "--output", filename]
-    try:
-        subprocess.run(cmds, check=True)
-        return filename
-    except Exception as e:
-        print(f"failed to download html by single-file: {e}")
-        return ""
+# Health check endpoint
+@app.route("/", methods=["GET"])
+def health_check():
+    logger.info("Health Check! Ok!")
+    return "OK", 200
 
 
 if __name__ == "__main__":
