@@ -8,6 +8,13 @@ from flask import Flask, request, jsonify
 app = Flask(__name__)
 
 
+# add "/" for health check
+@app.get("/")
+def health_check():
+    print("Health Check! Ok!")
+    return "OK"
+
+
 @app.route("/download", methods=["POST"])
 def download_html():
     data = request.json
