@@ -5,6 +5,7 @@ from pathlib import Path
 from flask import Flask, request, jsonify
 from bs4 import BeautifulSoup
 from loguru import logger
+from typing import Optional
 
 app = Flask(__name__)
 
@@ -14,7 +15,7 @@ def get_singlefile_path_from_env() -> str:
     return "single-file"
 
 
-async def singlefile_download(url: str, cookies_file: str | None = None) -> str:
+async def singlefile_download(url: str, cookies_file: Optional[str] = None) -> str:
     logger.info("Downloading HTML by SingleFile: {}", url)
 
     filename = tempfile.mktemp(suffix=".html")
