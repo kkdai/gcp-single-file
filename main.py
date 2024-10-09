@@ -2,11 +2,13 @@ import os
 import tempfile
 import asyncio
 import json
+import re
 from pathlib import Path
 from flask import Flask, request, Response
 from bs4 import BeautifulSoup
 from loguru import logger
 from typing import Optional
+from markdownify import markdownify
 
 app = Flask(__name__)
 
@@ -14,6 +16,12 @@ app = Flask(__name__)
 def get_singlefile_path_from_env() -> str:
     # 直接返回 'single-file'，因為它應該在 PATH 中
     return "single-file"
+
+
+def remove_base64_image(markdown_text: str) -> str:
+    pattern = r"!\[.*?\]\(data:image\/.*?;base64,.*?\)"
+    cleaned_text = re.sub(pattern, "", markdown_text)
+    return cleaned_text
 
 
 async def singlefile_download(url: str, cookies_file: Optional[str] = None) -> str:
@@ -84,8 +92,10 @@ async def download_html():
 
     try:
         content = await load_singlefile_html(url)
+        text = markdownify(content)
+        clean_text = remove_base64_image(text)
         # 手動構建 JSON 響應，確保不轉義 Unicode 字符
-        response_data = json.dumps({"content": content}, ensure_ascii=False)
+        response_data = json.dumps({"content": clean_text}, ensure_ascii=False)
         return Response(response_data, mimetype="application/json"), 200
     except Exception as e:
         logger.error("Failed to download HTML: {}", e)
